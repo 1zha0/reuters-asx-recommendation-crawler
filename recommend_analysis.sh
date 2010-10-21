@@ -14,10 +14,20 @@
 #!/bin/bash
 CO_LIST='ASXListedCompanies.csv'
 RESULT='CompaniesRecommendation.csv'
+TEMP='CompaniesTemp.csv'
 
 wget -N http://www.asx.com.au/asx/research/$CO_LIST
-echo "ASX Code, Recommendation" > $RESULT
+
+if [ -f "$RESULT" ];
+then
+	mv $RESULT $TEMP
+	echo "`head -n1 $TEMP`, `date +"%d/%m/%Y"`" > $RESULT
+else
+	echo "ASX Code, `date +"%d/%m/%Y"`" > $RESULT
+fi
+	
 for i in `awk -F'",|,"' '{print $2}' $CO_LIST`
 do
-	echo "$i, `wget http://www.reuters.com/finance/stocks/overview?symbol=$i.AX -O - | grep 'alt="Analyst Recommendations" title="[0-9.]*" />' | awk -F'"' '{print $10}'`" >> $RESULT
+	echo "`cat $TEMP | grep $i`, `wget http://www.reuters.com/finance/stocks/overview?symbol=$i.AX -O - | grep 'alt="Analyst Recommendations" title="[0-9.]*" />' | awk -F'"' '{print $10}'`" >> $RESULT
 done
+rm $CO_LIST $TEMP
