@@ -28,6 +28,11 @@ fi
 	
 for i in `awk -F'",|,"' '{print $2}' $CO_LIST`
 do
-	echo "`cat $TEMP | grep $i`, `wget http://www.reuters.com/finance/stocks/overview?symbol=$i.AX -O - | grep 'alt="Analyst Recommendations" title="[0-9.]*" />' | awk -F'"' '{print $10}'`" >> $RESULT
+	if [ -f "$TEMP" ];
+	then
+		echo "`cat $TEMP | grep $i`, `wget http://www.reuters.com/finance/stocks/overview?symbol=$i.AX -O - | grep 'alt="Analyst Recommendations" title="[0-9.]*" />' | awk -F'"' '{print $10}'`" >> $RESULT
+	else
+		echo "$i, `wget http://www.reuters.com/finance/stocks/overview?symbol=$i.AX -O - | grep 'alt="Analyst Recommendations" title="[0-9.]*" />' | awk -F'"' '{print $10}'`" >> $RESULT
+	fi
 done
 rm $CO_LIST $TEMP
