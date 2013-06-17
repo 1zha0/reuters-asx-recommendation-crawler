@@ -16,23 +16,36 @@ CO_LIST='ASXListedCompanies.csv'
 RESULT='CompaniesRecommendation.csv'
 TEMP='CompaniesTemp.csv'
 
+FORMAT_HEADER='###'
+
+function getrecommend() {
+	local recommend=`wget http://www.reuters.com/finance/stocks/overview?symbol=$1.AX -O - | grep 'alt="Analyst Recommendations" title="[0-9.]*" />' | awk -F'"' '{print $10}'`
+	echo $recommend
+}
+
 wget -N http://www.asx.com.au/asx/research/$CO_LIST
 
 if [ -f "$RESULT" ];
 then
 	mv $RESULT $TEMP
 	echo "`head -n1 $TEMP`, `date +"%d/%m/%Y"`" > $RESULT
+	FORMAT="`tail -n1 $TEMP`"
 else
 	echo "ASX Code, `date +"%d/%m/%Y"`" > $RESULT
+	FORMAT="$FORMAT_HEADER"
 fi
 	
 for i in `awk -F'",|,"' '{print $2}' $CO_LIST`
 do
-	if [ -f "$TEMP" ];
-	then
-		echo "`cat $TEMP | grep $i`, `wget http://www.reuters.com/finance/stocks/overview?symbol=$i.AX -O - | grep 'alt="Analyst Recommendations" title="[0-9.]*" />' | awk -F'"' '{print $10}'`" >> $RESULT
+	if [ -f "$TEMP" ]; then
+		if grep -q $i $TEMP; then
+			echo "`cat $TEMP | grep $i`, `getrecommend $i`" >> $RESULT
+		else
+			echo "`echo "$FORMAT" | sed 's/$FORMAT_HEADER/$i/g'`, `getrecommend $i`" >> $RESULT
+		fi
 	else
-		echo "$i, `wget http://www.reuters.com/finance/stocks/overview?symbol=$i.AX -O - | grep 'alt="Analyst Recommendations" title="[0-9.]*" />' | awk -F'"' '{print $10}'`" >> $RESULT
+		echo "$i, `getrecommend $i`" >> $RESULT
 	fi
 done
+echo "$FORMAT, " >> $RESULT
 rm $CO_LIST $TEMP
